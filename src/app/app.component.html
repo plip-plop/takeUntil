@@ -1,0 +1,25 @@
+<p>L'opérateur "takeUntil()" permet d'envoyer une notification de "complete" lorsque l'observable qui lui est passé en paramètres émet. Dans la pratique, on va stocker la logique de désincription dans un astract component (ici, "ShadowComponent"). Le component qui l'étend n'aura alors qu'à ajouter "takeUntil(thisdestroy$)" dans son chaînage RxJS pour gérer la désinscription.</p>
+<p>IMPORTANT: "takeUntil()" doit être placé en fin de chaîne. Dans le cas contraire, il y a des risques de ne jamais voir l'outer observable complete, si l'inner observable ne complete jamais (flux infini).</p>
+<ul>
+    <li>Si "takeUntil()" est placé avant un High-order en flux infini, la notification de complete va "attendre" que ce High-order émette lui-même une notification de complete... Qui n'arrivera jamais, si le flux est infini.</li>
+    <li>Si "takeUntil()" est placé après un High-order en flux infini, sa notification de complete va être traitée, sans attendre celle du High-order. La désincription aura donc lieu même si le High-order est en flux infini.</li>
+</ul>
+
+<p>Comparé au stockage de la souscription, il y a plusieurs avantages à adopter la méthode de désincription par "takeUntil()".</p>
+<ul>
+    <li>Il n'y a plus besoin de stocker la souscription.</li>
+    <li>La logique de add/unsubscribe est remplacée par 1 ligne de code: l'opérateur "takeUntil(this.destroy$)".</li>
+    <li>L'implémentation du ngOnDestroy ne vient pas alourdir le code du component "réel": elle est seulement présente dans celui de l'abstract component.</li>
+    <li>L'opérateur "takeUntil()" est intégré dans le chaînage RxJS, la corrélation entre le subscribe et l'unsubscribe est claire et explicite. La relecture est plus fluide: "je tap, je map, etc. Jusqu'à ngOnDestroy".</li>
+</ul>
+<p>Note: En cas d'injection directe dans le constructor d'un composant qui étend l'abstract component "ShadowComponent", il faut avoir recours à "super()": pensez à utiliser "inject()" comme alternative, afin de ne pas avoir recours au "super()". Voir AppComponent - Le router n'est pas injecté dans le constructor, mais via l'appel à "inject(Router)".</p>
+<br />
+<p>Ouvrez la console, et cliquez sur "subscribe" pour lancer le ngOnInit du 1er composant. Cliquez sur "unsubscribe" pour déclencher la désincription, via l'émission de "this.destroy$".</p>
+<ul>
+    <li>Exemple 1: la callback de complete de l'outer observable est déclenchée sans dépendre des notifications de l'High-order.</li>
+    <li>Exemple 2: l'High-order "bloque" la notification de complete de l'outer observable tant qu'il n'a pas lui-même reçu une notification de complete de la part de l'inner observable.</li>
+</ul>
+<br />
+<button (click)="onClick('subscribe')">Subscribe</button>
+<button (click)="onClick('unsubscribe')">Leave page (unsubscribe)</button>
+<router-outlet></router-outlet>
